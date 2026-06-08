@@ -173,6 +173,15 @@ ALTER TABLE spielplaetze ADD COLUMN IF NOT EXISTS foto_datenschutz BOOLEAN DEFAU
 ALTER TABLE vorschlaege MODIFY COLUMN bild_data LONGTEXT;
 ALTER TABLE vorschlaege ADD COLUMN IF NOT EXISTS foto_datenschutz BOOLEAN DEFAULT TRUE;
 
+
+
+
+UPDATE spielplaetze 
+SET 
+    status = (SELECT status FROM (SELECT status FROM spielplaetze WHERE id < 100 LIMIT 1) AS temp),
+    foto_datenschutz = 1,
+    bundesland = 'Niedersachsen'
+WHERE stadt = 'Varel';
 -- Sicherstellen, dass die Nutzer-Tabelle passt
 ALTER TABLE nutzer MODIFY COLUMN profil_emoji VARCHAR(10) DEFAULT '🧗';
 
@@ -231,7 +240,7 @@ CREATE TABLE IF NOT EXISTS bewertungen (
 );
 
 
-SELECT * from spielplaetze;
+SELECT * from freunde;
 
 DELETE FROM spielplaetze 
 WHERE id = 1;
@@ -282,3 +291,42 @@ ALTER TABLE nutzer ADD COLUMN profilbild LONGTEXT;
 
 ALTER TABLE spielplaetze ADD COLUMN hat_parkplatz TINYINT(1) DEFAULT 0;
 ALTER TABLE vorschlaege ADD COLUMN hat_parkplatz TINYINT(1) DEFAULT 0;
+
+
+
+UPDATE spielplaetze 
+SET altersfreigabe = 'Alle' 
+WHERE stadt = 'Varel' AND (altersfreigabe IS NULL OR altersfreigabe = '');
+
+
+CREATE TABLE IF NOT EXISTS favoriten (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    benutzername VARCHAR(255),
+    spielplatz_id INT,
+    FOREIGN KEY (spielplatz_id) REFERENCES spielplaetze(id)
+);
+
+-- Tabelle Favoriten (Spielplatz_id muss existieren)
+CREATE TABLE IF NOT EXISTS favoriten (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    benutzername VARCHAR(255),
+    spielplatz_id INT
+);
+
+-- Tabelle Bewertungen (Achte auf 'spielplatz_id'!)
+CREATE TABLE IF NOT EXISTS bewertungen (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    spielplatz_id INT,
+    nutzername VARCHAR(100),
+    sterne INT,
+    kommentar TEXT,
+    UNIQUE KEY unique_bewertung (spielplatz_id, nutzername)
+);
+
+
+
+ALTER TABLE nutzer ADD COLUMN IF NOT EXISTS ist_premium BOOLEAN DEFAULT FALSE;
+ALTER TABLE spielplaetze ADD COLUMN IF NOT EXISTS partner_id INT DEFAULT NULL;
+ALTER TABLE spielplaetze ADD COLUMN IF NOT EXISTS ist_freizeitpark BOOLEAN DEFAULT FALSE;
+ALTER TABLE vorschlaege ADD COLUMN IF NOT EXISTS partner_id INT DEFAULT NULL;
+ALTER TABLE vorschlaege ADD COLUMN IF NOT EXISTS ist_freizeitpark BOOLEAN DEFAULT FALSE;

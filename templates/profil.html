@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WuselMap - Profil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/static/map_style.css?v=2.0">
+    
+    <style>
+        /* Verhindert doppelten Scrollbalken auf dem Hauptfenster im Desktop-Modus */
+        body { 
+            margin: 0; 
+            padding: 0;
+            height: 100vh;
+            overflow: hidden !important; 
+            background: var(--bg-dark); 
+        }
+
+        /* Hauptbereich absolut unter dem Logo und rechts neben der Navigation */
+        .main-wrapper { 
+            position: absolute;
+            top: calc(var(--header-height) + 10px);
+            left: calc(var(--nav-width) + 30px);
+            right: 30px;
+            bottom: 20px;
+            box-sizing: border-box; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Überschrift bleibt fest oben stehen */
+        .profile-heading {
+            color: var(--accent-gold); 
+            font-size: 2.2rem; 
+            text-transform: uppercase; 
+            margin-top: 0; 
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Das 3-Spalten-Grid hält die Breiten stabil */
+        .profil-grid { 
+            display: grid; 
+            grid-template-columns: 320px minmax(300px, 650px) 350px; 
+            gap: 30px; 
+            align-items: start; 
+            flex-grow: 1;
+            min-height: 0;
+            width: 100%;
+        }
+
+        /* Linker Container für Avatar, Admin & Feedback untereinander */
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 5px; /* Verhindert das Abschneiden der Scrollbar */
+        }
+
+        /* Alle Karten nutzen die Höhenvorgaben und scrollen intern, falls nötig */
+        .profil-card { 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: 20px; 
+            border-top: 5px solid var(--accent-gold); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            box-sizing: border-box;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Das Formular füllt nun einfach die perfekt dimensionierte Karte aus */
+        .profil-card form {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        .avatar-circle { width: 140px; height: 140px; border-radius: 50%; border: 4px solid var(--accent-gold); background: var(--main-turquois); display: flex; align-items: center; justify-content: center; font-size: 3.5rem; overflow: hidden; margin: 0 auto 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .profil-input { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--card-bg); background: var(--main-turquois); color: var(--text-light); font-family: inherit; box-sizing: border-box; }
+        
+        /* Textarea für Feedback */
+        .profil-textarea { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--card-bg); background: var(--main-turquois); color: var(--text-light); font-family: inherit; box-sizing: border-box; resize: none; min-height: 100px; }
+        
+        .btn-profil { width: 100%; padding: 15px; border-radius: 10px; font-weight: 900; text-transform: uppercase; cursor: pointer; border: none; transition: 0.3s; display: block; margin-top: auto; text-align: center; text-decoration: none; }
+        .btn-gold { background: var(--accent-gold); color: var(--bg-dark); }
+        
+        /* Favoriten-Container scrollt jetzt sauber innerhalb seiner Karte */
+        .fav-grid { 
+            display: flex;
+            flex-direction: column;
+            gap: 15px; 
+            margin-top: 15px; 
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 5px;
+        }
+
+        .fav-card { background: var(--main-turquois); border-radius: 15px; overflow: hidden; border: 1px solid rgba(229, 185, 77, 0.2); transition: 0.3s; display: flex; flex-direction: column; flex-shrink: 0; }
+        label { display: block; margin-top: 15px; font-size: 0.85rem; color: var(--accent-gold); font-weight: bold; text-transform: uppercase; }
+        
+        /* MOBIL-ANPASSUNGEN (Für Handys und Tablets untereinander brechen) */
+        @media (max-width: 1200px) {
+            body { 
+                overflow: auto !important; /* Erlaubt Scrollen mobil */
+                height: auto; 
+            }
+            .main-wrapper { 
+                position: relative !important; 
+                top: auto !important; 
+                left: auto !important; 
+                right: auto !important; 
+                bottom: auto !important; 
+                margin-left: var(--nav-width); 
+                padding: 20px; 
+                overflow: visible; 
+            }
+            .profil-grid { 
+                grid-template-columns: 1fr !important; 
+                height: auto !important;
+            }
+            .left-column { 
+                height: auto !important; 
+                overflow: visible !important; 
+            }
+            .profil-card { 
+                height: auto !important; 
+                overflow: visible !important;
+                margin-bottom: 20px;
+            }
+            .fav-grid {
+                max-height: 400px; /* Begrenzt die Favoriten mobil für bessere Übersicht */
+            }
+        }
+    </style>
+</head>
+<body>
+    <header id="top-logo-bar">
+        <div class="logo-positioner">
+            <img src="/static/Logo_Wuselmap.png" alt="WuselMap" class="main-logo">
+        </div>
+    </header>
+
+    <nav id="main-nav">
+        <a href="/map" class="nav-item"><span class="nav-icon">🗺️</span><span class="nav-label">Karte</span></a>
+        <a href="/funk" class="nav-item"><span class="nav-icon">📻</span><span class="nav-label">Funk</span></a>
+        <a href="/crew" class="nav-item"><span class="nav-icon">👥</span><span class="nav-label">Crew</span></a>
+        <a href="/profil" class="nav-item active"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></a>
+        <a href="/rechtliches" class="nav-item"><span class="nav-icon">📄</span><span class="nav-label">Rechtliches</span></a>
+        <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span><span class="nav-label">Logout</span></a>
+    </nav>
+
+    <div class="main-wrapper">
+        <h1 class="profile-heading">
+            {{ user_data.profil_emoji or '👤' }} {{ user_data.vorname }}s Bereich
+        </h1>
+
+        <div class="profil-grid">
+            <div class="left-column">
+                <div class="profil-card" style="text-align: center; height: auto; flex-shrink: 0; position: relative;">
+                    
+                    <div style="position: relative; width: 140px; margin: 0 auto 20px;">
+                        <div class="avatar-circle" id="avatar-display">
+                            {{ user_data.profil_emoji or '👤' }}
+                        </div>
+                        
+                        <form id="avatar-form" action="/update_avatar" method="post" enctype="multipart/form-data" style="display: none;">
+                            <input type="file" id="avatar-input" name="avatar_file" accept="image/*" onchange="submitAvatar()">
+                        </form>
+                        
+                        <div onclick="triggerAvatarUpload()" style="position: absolute; bottom: 5px; right: 5px; background: var(--accent-gold); color: var(--bg-dark); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; border: 2px solid var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.3);" title="Profilbild ändern">
+                            📷
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 10px 0; color: white;">@{{ user_data.benutzername }}</h3>
+                    <p style="opacity: 0.7; font-size: 0.8rem; margin-bottom: 0;">Mitglied seit: {{ user_data.created_at or 'Anfang an' }}</p>
+                </div>
+
+                {% if user_data.is_admin %}
+                <div class="profil-card" style="height: auto; border-top: 5px solid #ff4444; flex-shrink: 0;">
+                    <h3 style="color: #ff4444; text-transform: uppercase; margin-top: 0; margin-bottom: 15px;">🛠️ Admin-Zentrale</h3>
+                    <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">Du hast administrative Rechte.</p>
+                    <a href="/admin" class="btn-profil" style="background: #ff4444; color: white; margin-top: 0;">Admin-Bereich</a>
+                </div>
+                {% endif %}
+
+                <div class="profil-card" style="height: auto; flex-shrink: 0;">
+                    <h3 style="color: var(--accent-gold); text-transform: uppercase; margin-top: 0; margin-bottom: 10px;">💬 Feedback</h3>
+                    <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 10px; margin-top: 0;">Fehler gefunden oder eine Idee? Schreib uns!</p>
+                    
+                    <form action="/send_feedback" method="post">
+                        <label style="margin-top: 0;">Deine Nachricht</label>
+                        <textarea name="feedback_text" class="profil-textarea" placeholder="Dein Feedback hier rein..." required></textarea>
+                        <button type="submit" class="btn-profil btn-gold" style="margin-top: 15px; padding: 10px;">Senden</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="profil-card">
+                <h3 style="color: var(--accent-gold); text-transform: uppercase; margin-top: 0; margin-bottom: 20px;">⚙️ Deine Daten</h3>
+                <form action="/update_profil" method="post">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="margin-top: 0;">Vorname</label>
+                            <input type="text" name="vorname" class="profil-input" value="{{ user_data.vorname }}">
+                        </div>
+                        <div>
+                            <label style="margin-top: 0;">Nachname</label>
+                            <input type="text" name="nachname" class="profil-input" value="{{ user_data.nachname }}">
+                        </div>
+                    </div>
+                    
+                    <label>E-Mail Adresse</label>
+                    <input type="email" name="email" class="profil-input" value="{{ user_data.email }}">
+                    
+                    <label>Profil-Emoji (Dein Symbol)</label>
+                    <input type="text" name="emoji" class="profil-input" value="{{ user_data.profil_emoji or '👤' }}" maxlength="2">
+                    
+                    <button type="submit" class="btn-profil btn-gold">Änderungen speichern</button>
+                </form>
+            </div>
+
+            <div class="profil-card">
+                <h3 style="color: var(--accent-gold); text-transform: uppercase; margin-top: 0; margin-bottom: 10px;">⭐ Favoriten</h3>
+                <div class="fav-grid">
+                    {% for spot in favoriten %}
+                    <div class="fav-card">
+                        <div style="padding: 20px;">
+                            <h4 style="margin: 0; color: var(--accent-gold);">{{ spot.standort }}</h4>
+                            <p style="font-size: 0.8rem; opacity: 0.7; margin: 5px 0 15px 0;">📍 {{ spot.stadt }}</p>
+                            <a href="/map?lat={{ spot.lat }}&lon={{ spot.lon }}" class="btn-profil" style="border: 1px solid var(--accent-gold); color: var(--accent-gold); font-size: 0.7rem; padding: 10px; margin-top: 0; margin-right: auto; width: fit-content; min-width: 100px;">Anzeigen</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p style="opacity: 0.5; text-align: center; margin-top: 30px;">Noch keine Favoriten.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function triggerAvatarUpload() {
+            document.getElementById('avatar-input').click();
+        }
+
+        function submitAvatar() {
+            document.getElementById('avatar-form').submit();
+        }
+    </script>
+</body>
+</html>

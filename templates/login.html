@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WuselMap - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --main-turquois: #083d4d;
+            --accent-gold: #c5a043;
+            --bg-dark: #052a35;
+            --card-bg: #0a4a5c;
+            --text-light: #f4e4bc;
+        }
+        body { 
+            margin: 0; 
+            padding: 20px; /* Verhindert, dass die Box mobil am Rand klebt */
+            font-family: 'Montserrat', sans-serif; 
+            background: var(--bg-dark); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; /* Erlaubt Scrollen, falls der Inhalt höher als der Bildschirm ist */
+            box-sizing: border-box;
+        }
+        .login-box {
+            width: 100%;
+            max-width: 400px; /* Skaliert automatisch auf kleineren Displays */
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 20px;
+            border: 3px solid var(--accent-gold);
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            box-sizing: border-box;
+        }
+        .login-logo {
+            max-width: 250px;
+            width: 100%; /* Verhindert horizontales Überlappen bei sehr schmalen Handys */
+            height: auto;
+            margin-bottom: 20px;
+        }
+        .login-input { 
+            width: 100%; 
+            padding: 15px; 
+            margin: 10px 0;
+            border-radius: 10px; 
+            border: 2px solid var(--bg-dark); 
+            background: var(--main-turquois); 
+            color: white;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        .btn-login { 
+            width: 100%;
+            padding: 18px; 
+            border-radius: 12px; 
+            border: none; 
+            font-weight: bold; 
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+            text-transform: uppercase;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.2s ease-in-out;
+        }
+        .btn-login:hover {
+            filter: brightness(1.1);
+        }
+        .register-link, .legal-footer {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+        .register-link a, .legal-footer a {
+            color: var(--accent-gold);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .legal-footer {
+            margin-top: 30px;
+            opacity: 0.7;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap; /* Bricht die Links mobil sauber in die nächste Zeile */
+            gap: 15px;
+        }
+        .legal-footer a {
+            font-weight: normal;
+            color: var(--text-light);
+        }
+        .error-msg {
+            background: #7f1d1d;
+            color: #fecaca;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <img src="/static/Logo_Wuselmap.png" class="login-logo" alt="Wuselmap Logo">
+
+        <h2 style="color: var(--accent-gold); text-transform: uppercase; margin-bottom: 20px; font-size: 1.5rem;">WuselMap Login</h2>
+        
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form action="/login" method="POST">
+            <input type="text" id="username" name="username" class="login-input" required placeholder="Benutzername">
+            <input type="password" id="password" name="password" class="login-input" required placeholder="Passwort">
+            <button type="submit" class="btn-login">Anmelden</button>
+        </form>
+
+        <div class="register-link">
+            Noch kein Konto? <a href="/register">Hier registrieren</a>
+        </div>
+
+        <div class="legal-footer">
+            <a href="/impressum">Impressum</a>
+            <a href="/datenschutz">Datenschutz</a>
+            <a href="/agb">AGB</a>
+        </div>
+    </div>
+
+</body>
+</html>

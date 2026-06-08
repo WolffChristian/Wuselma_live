@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WuselMap - Funkstation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- CSS-Version angepasst -->
+    <link rel="stylesheet" href="/static/map_style.css?v=2.0">
+    
+    <style>
+        /* Verhindert Scrollbalken auf dem Hauptdokument im Desktop-Modus */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+        }
+
+        /* FIX: Zwingt die Boxen ganz nach oben direkt unter das Logo */
+        .funk-area {
+            position: absolute;
+            top: calc(var(--header-height) + 10px); /* Klebt sie direkt 10px unter das Logo */
+            left: calc(var(--nav-width) + 30px);   /* Hält exakt Abstand zur linken Navigation */
+            right: 30px;
+            bottom: 20px;                           /* Lässt unten 20px Platz zum Bildschirmrand */
+            display: grid;
+            grid-template-columns: 320px 1fr;       /* Schmalere Breite für das Eingabefeld */
+            gap: 30px;
+            box-sizing: border-box;
+        }
+
+        .funk-column {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            border-top: 5px solid var(--accent-gold);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden; 
+            height: 100%;     
+            box-sizing: border-box;
+        }
+
+        .filter-bar {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px solid var(--accent-gold);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-field, .select-field, .area-field {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--card-bg);
+            background: var(--main-turquois);
+            color: var(--text-light);
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .area-field { resize: none; flex-grow: 1; min-height: 120px; }
+
+        .funk-btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+            transition: 0.3s;
+            margin-top: auto;
+        }
+
+        .funk-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .msg-container { 
+            overflow-y: auto; 
+            flex-grow: 1;
+            padding-right: 10px;
+        }
+
+        .msg-card {
+            background: var(--main-turquois);
+            padding: 18px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--accent-gold);
+        }
+
+        .msg-card.warning {
+            border-left: 8px solid #ff4444;
+            background: rgba(255, 68, 68, 0.15);
+        }
+
+        .msg-meta { font-size: 0.85rem; color: var(--accent-gold); font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        
+        h2 { color: var(--accent-gold); text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-top: 0; margin-bottom: 20px; }
+
+        /* MOBIL-ANPASSUNGEN (Für Handys und Tablets untereinander brechen) */
+        @media (max-width: 1100px) {
+            body {
+                overflow: auto !important; /* Erlaubt das Scrollen auf der mobilen Seite */
+                height: auto;
+            }
+            .funk-area { 
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                right: auto !important;
+                bottom: auto !important;
+                margin-left: var(--nav-width); 
+                grid-template-columns: 1fr !important; 
+                height: auto !important; 
+                padding: 20px; 
+            }
+            .funk-column { 
+                height: auto !important; 
+                overflow: visible !important;
+                margin-bottom: 20px;
+            }
+            .msg-container {
+                max-height: 500px; /* Begrenzt den Feed mobil, damit er benutzbar bleibt */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="top-logo-bar">
+        <div class="logo-positioner">
+            <img src="/static/Logo_Wuselmap.png" alt="WuselMap" class="main-logo">
+        </div>
+    </header>
+
+    <nav id="main-nav">
+        <a href="/map" class="nav-item"><span class="nav-icon">🗺️</span><span class="nav-label">Karte</span></a>
+        <a href="/funk" class="nav-item active"><span class="nav-icon">📻</span><span class="nav-label">Funk</span></a>
+        <a href="/crew" class="nav-item"><span class="nav-icon">👥</span><span class="nav-label">Crew</span></a>
+        <a href="/profil" class="nav-item"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></a>
+        <a href="/rechtliches" class="nav-item"><span class="nav-icon">📄</span><span class="nav-label">Rechtliches</span></a>
+        <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span><span class="nav-label">Logout</span></a>
+    </nav>
+
+    <div class="funk-area">
+        <div class="funk-column">
+            <h2>📻 Funken</h2>
+            <div class="form-box">
+                <form action="/sende_funk" method="post">
+                    <label style="color: var(--accent-gold); font-size: 0.8rem;">Ort / Spielplatz</label>
+                    <select name="spot" class="select-field">
+                        <option value="Allgemein">📍 Allgemein</option>
+                        {% for s in spot_namen %}
+                        <option value="{{ s }}">{{ s }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label style="color: var(--accent-gold); font-size: 0.8rem;">Nachricht</label>
+                    <textarea name="nachricht" class="area-field" placeholder="Was gibt's Neues?" required></textarea>
+                    
+                    <input type="hidden" name="is_private" value="False">
+                    <button type="submit" class="funk-btn">Senden</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="funk-column">
+            <h2>📡 Live-Funk Feed</h2>
+            
+            <div class="filter-bar">
+                <span style="color: var(--accent-gold); font-weight: bold;">📍 Filter:</span>
+                <input type="text" id="funk-filter" class="input-field" style="margin: 0;" 
+                       placeholder="Ort eingeben..." 
+                       value="{% if user_data %}{{ user_data.stadt or '' }}{% endif %}" 
+                       oninput="filterFunk()">
+            </div>
+
+            <div class="msg-container" id="public-feed">
+                {% for msg in public_msg %}
+                <div class="msg-card {% if 'achtung' in msg.nachricht.lower() or 'gefahr' in msg.nachricht.lower() or 'warnung' in msg.nachricht.lower() %}warning{% endif %}" 
+                     data-ort="{{ msg.spot_name | lower }}">
+                    <div class="msg-meta">
+                        <span>📍 {{ msg.spot_name }}</span>
+                        <span style="color: var(--accent-gold);">👤 {{ msg.von_nutzer }}</span>
+                    </div>
+                    <div style="color: white; font-size: 1.1rem;">{{ msg.nachricht }}</div>
+                    <div style="font-size: 0.75rem; opacity: 0.5; margin-top: 10px; text-align: right;">{{ msg.zeitpunkt }}</div>
+                </div>
+                {% else %}
+                <p style="text-align: center; opacity: 0.5; margin-top: 20px;">Noch keine Funksprüche vorhanden.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            filterFunk();
+        };
+
+        function filterFunk() {
+            const filterInput = document.getElementById('funk-filter');
+            if (!filterInput) return;
+            
+            const input = filterInput.value.toLowerCase();
+            const cards = document.querySelectorAll('.msg-card');
+            
+            cards.forEach(card => {
+                const ort = card.getAttribute('data-ort') || "";
+                if (input === "" || ort.includes(input)) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

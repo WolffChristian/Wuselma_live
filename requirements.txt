@@ -1,9 +1,7 @@
-streamlit
-mysql-connector-python
-pandas
-plotly
-opencage
-numpy
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+requests
+python-dotenv
 Pillow
-extra-streamlit-components
-streamlit-geolocation

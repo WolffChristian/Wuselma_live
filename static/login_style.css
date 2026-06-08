@@ -1,0 +1,67 @@
+:root { 
+    --main-turquois: #083d4d;
+    --accent-gold: #c5a043;
+    --bg-dark: #052a35;
+    --card-bg: #0a4a5c;
+    --text-light: #f4e4bc;
+}
+
+body { 
+    margin: 0; 
+    font-family: 'Montserrat', sans-serif; 
+    background: var(--bg-dark); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh;
+}
+
+.login-box {
+    width: 400px;
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 20px;
+    border: 3px solid var(--accent-gold);
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+}
+
+.login-logo {
+    max-width: 250px !important; /* Zwingt das Logo klein zu bleiben */
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.login-input { 
+    width: 100%; 
+    padding: 15px; 
+    margin: 10px 0 20px 0;
+    border-radius: 10px; 
+    border: 2px solid var(--bg-dark); 
+    background: var(--main-turquois); 
+    color: white;
+    box-sizing: border-box;
+}
+
+.btn-login { 
+    width: 100%;
+    padding: 18px; 
+    border-radius: 12px; 
+    border: none; 
+    font-weight: bold; 
+    background: var(--accent-gold);
+    color: var(--bg-dark);
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.register-link, .legal-footer {
+    margin-top: 20px;
+    font-size: 0.9rem;
+}
+
+.register-link a, .legal-footer a {
+    color: var(--accent-gold);
+    text-decoration: none;
+    margin: 0 10px;
+}

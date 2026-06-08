@@ -1,0 +1,221 @@
+:root { 
+    --main-turquois: #083d4d;
+    --accent-gold: #c5a043;
+    --bg-dark: #052a35;
+    --card-bg: #0a4a5c;
+    --text-light: #f4e4bc;
+    
+    --header-height: 100px; /* Noch kompakterer Header */
+    --nav-width: 75px;      /* Schmalere Navi */
+    --sidebar-width: 380px; 
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Der Hauptbildschirm darf nicht wackeln */
+    background: var(--bg-dark);
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* HEADER */
+#top-logo-bar {
+    height: var(--header-height);
+    width: 100%;
+    background: linear-gradient(90deg, #083d4d 0%, #0a4a5c 100%); 
+    display: flex; 
+    align-items: center;
+    border-bottom: 3px solid var(--accent-gold);
+    box-sizing: border-box;
+}
+
+.main-logo { height: 80px; margin-left: 15px; }
+
+/* DER WRAPPER (Verbindet alles unter dem Header) */
+.main-wrapper {
+    display: flex;
+    height: calc(100vh - var(--header-height));
+    width: 100%;
+}
+
+/* NAVIGATION (Icons kleiner & Scroll-Garantie) */
+#main-nav { 
+    width: var(--nav-width); 
+    background: var(--bg-dark); 
+    display: flex; 
+    flex-direction: column; 
+    border-right: 1px solid rgba(197, 160, 67, 0.2); 
+    
+    /* FIX FÜR LOGOUT: Wenn die Liste zu lang ist, kann man hier scrollen */
+    overflow-y: auto; 
+    scrollbar-width: none; /* Firefox */
+}
+
+#main-nav::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+.nav-item { 
+    color: rgba(244, 228, 188, 0.6); 
+    text-decoration: none; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0; /* Engere Abstände */
+    gap: 2px;
+    width: 100%;
+    flex-shrink: 0; /* Verhindert, dass Icons gequetscht werden */
+}
+
+.nav-item:hover, .nav-item.active { 
+    color: var(--accent-gold); 
+    background: rgba(197, 160, 67, 0.1);
+}
+
+.nav-icon { font-size: 1.4rem; } /* Kleine, feine Icons */
+.nav-label { font-size: 0.55rem; font-weight: 700; text-transform: uppercase; text-align: center; }
+
+/* SIDEBAR (Scrolling gefixt) */
+#sidebar { 
+    width: var(--sidebar-width); 
+    background: var(--card-bg); 
+    height: 100%;
+    overflow-y: auto; 
+    border-right: 2px solid var(--accent-gold);
+    box-sizing: border-box;
+}
+
+/* KARTE */
+#map-container { 
+    flex: 1;
+    height: 100%;
+}
+
+#map { height: 100%; width: 100%; }
+
+/* BUTTONS */
+.btn { 
+    padding: 12px; 
+    border-radius: 8px; 
+    font-size: 0.85rem; 
+    font-weight: 800; 
+    background: var(--accent-gold);
+    color: var(--bg-dark);
+    margin: 10px 15px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+}
+
+/* SCROLLBAR-STYLING FÜR SIDEBAR */
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 10px; }
+
+/* CONTAINER FÜR DIE SUCHE */
+.search-container {
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(197, 160, 67, 0.2);
+    box-sizing: border-box;
+}
+
+/* DAS HAUPT-EINGABEFELD (Zwingend auf 100% Breite) */
+#suche {
+    display: block !important;
+    width: 100% !important;
+    height: 45px !important;
+    padding: 10px 15px !important;
+    font-size: 1rem !important;
+    background: var(--bg-dark) !important;
+    color: var(--text-light) !important;
+    border: 1px solid var(--accent-gold) !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+}
+
+/* DAS ALTER-DROPDOWN (Explizit auf 60% Breite beschränkt) */
+select.search-box {
+    display: inline-block !important;
+    width: 60% !important;
+    height: 40px !important;
+    padding: 5px !important;
+    background: var(--bg-dark) !important;
+    color: var(--text-light) !important;
+    border: 1px solid var(--accent-gold) !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+}
+
+/* ==========================================================================
+   HANDY- & TABLET-OPTIMIERUNG (RESPONSIVE DESIGN)
+   ========================================================================== */
+@media (max-width: 768px) {
+    :root {
+        --header-height: 60px !important;
+    }
+
+    html, body {
+        overflow: hidden !important;
+    }
+
+    #top-logo-bar {
+        justify-content: center !important;
+    }
+    .main-logo {
+        height: 45px !important;
+        margin-left: 0 !important;
+    }
+
+    /* Stapelt die Elemente vertikal */
+    .main-wrapper {
+        flex-direction: column !important;
+        height: calc(100vh - var(--header-height) - 65px) !important;
+        width: 100% !important;
+    }
+
+    /* Navigation wandert nach unten als App-Bar */
+    #main-nav {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 65px !important;
+        flex-direction: row !important;
+        border-right: none !important;
+        border-top: 2px solid var(--accent-gold) !important;
+        z-index: 9999 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+    }
+
+    .nav-item {
+        flex: 1 !important;
+        padding: 8px 0 !important;
+        min-width: 60px !important;
+    }
+
+    .nav-icon { font-size: 1.2rem !important; }
+    .nav-label { font-size: 0.5rem !important; }
+
+    /* Die Such-Sidebar nimmt auf dem Handy die oberen 40% ein */
+    #sidebar {
+        width: 100% !important;
+        height: 40% !important;
+        border-right: none !important;
+        border-bottom: 2px solid var(--accent-gold) !important;
+        overflow-y: auto !important;
+    }
+
+    /* Das Karten-Fenster bekommt die unteren 60% und ist voll sichtbar */
+    #map-container {
+        width: 100% !important;
+        height: 60% !important;
+        flex: none !important;
+    }
+
+    #map {
+        height: 100% !important;
+        width: 100% !important;
+    }
+}

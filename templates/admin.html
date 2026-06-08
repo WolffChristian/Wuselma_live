@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WuselMap Admin - Zentrale</title>
+    
+    <link rel="stylesheet" href="/static/map_style.css?v=2.0">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Verhindert doppelten Scrollbalken und hält das Layout stabil */
+        body { 
+            margin: 0; 
+            padding: 0;
+            height: 100vh;
+            overflow: hidden !important; 
+            background: var(--bg-dark); 
+            font-family: 'Montserrat', sans-serif;
+            color: white;
+        }
+
+        /* Admin-Zentrale dynamisch an die Navigation links angeschlossen */
+        .main-wrapper { 
+            position: absolute;
+            top: calc(var(--header-height) + 10px);
+            left: calc(var(--nav-width) + 20px); 
+            right: 30px;
+            bottom: 20px;
+            box-sizing: border-box; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header-Strukturierung übereinander statt nebeneinander */
+        .admin-header {
+            display: flex; 
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        
+        .tab-bar { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid var(--accent-gold); 
+            padding-bottom: 10px; 
+            flex-shrink: 0;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            width: 100%;
+        }
+        
+        .tab-bar::-webkit-scrollbar {
+            height: 4px;
+        }
+        .tab-bar::-webkit-scrollbar-thumb {
+            background: var(--accent-gold);
+            border-radius: 2px;
+        }
+        
+        .tab-btn { 
+            background: #083d4d; 
+            color: var(--text-light); 
+            border: 1px solid var(--accent-gold); 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            white-space: nowrap;
+            transition: background 0.2s ease;
+        }
+        .tab-btn.active { background: var(--accent-gold); color: var(--bg-dark); }
+        
+        /* Container für Tabellen, um horizontales Scrollen auf Mobilgeräten zu erlauben */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 10px;
+            border-radius: 10px;
+            background: var(--card-bg);
+        }
+
+        /* Intern scrollbarer Bereich für die Tab-Inhalte */
+        .tab-content { 
+            display: none; 
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            min-height: 0;
+        }
+        .tab-content.active { display: flex; flex-direction: column; }
+
+        /* Tabellen-Design */
+        .admin-table { width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden; }
+        .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
+        .admin-table th { background: var(--main-turquois); color: var(--accent-gold); text-transform: uppercase; font-size: 0.8rem; }
+        
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .status-offen { background: #c5a043; color: black; }
+        .status-aktiv { background: #28a745; color: white; }
+
+        /* FILTER- & AKKORDEON-STYLES FÜR DEN SPOT-MANAGER */
+        .filter-bar {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .search-input {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(229, 185, 77, 0.2);
+            background: var(--main-turquois); color: var(--text-light); font-family: inherit; box-sizing: border-box;
+        }
+        .accordion-container {
+            display: flex; flex-direction: column; gap: 10px; flex-grow: 1;
+        }
+        .region-section {
+            background: var(--card-bg); border-radius: 10px; border-left: 5px solid var(--accent-gold); overflow: hidden;
+        }
+        .region-header {
+            padding: 15px 20px; background: rgba(229, 185, 77, 0.05); color: white; font-weight: bold;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;
+        }
+        .region-header:hover { background: rgba(229, 185, 77, 0.1); }
+        .region-counter { background: var(--accent-gold); color: var(--bg-dark); padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; }
+        
+        .spots-list {
+            display: none; padding: 15px; background: rgba(0, 0, 0, 0.2);
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;
+            border-top: 1px solid rgba(229, 185, 77, 0.1);
+        }
+        .region-section.open .spots-list { display: grid; }
+        .region-section.open .region-header { background: rgba(229, 185, 77, 0.15); }
+
+        .spot-item-card {
+            background: var(--main-turquois); border-radius: 8px; padding: 15px;
+            border: 1px solid rgba(229, 185, 77, 0.1); display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .spot-info h4 { margin: 0 0 5px 0; color: var(--accent-gold); }
+        .spot-info p { margin: 0; font-size: 0.8rem; opacity: 0.7; }
+        .spot-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-sm { flex-grow: 1; padding: 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; border: none; text-transform: uppercase; text-decoration: none; }
+        .btn-edit { background: var(--accent-gold); color: var(--bg-dark); }
+        .btn-delete { background: #ff4444; color: white; }
+
+        /* MOBIL-ANPASSUNGEN */
+        @media (max-width: 1024px) {
+            body { overflow: auto !important; height: auto; }
+            .main-wrapper { 
+                position: relative !important; top: auto !important; left: auto !important; right: auto !important; bottom: auto !important; 
+                margin-left: var(--nav-width); padding: 20px; overflow: visible; 
+            }
+            .tab-content { overflow: visible; height: auto; }
+        }
+
+        @media (max-width: 768px) {
+            .main-wrapper { margin-left: 0 !important; padding: 15px; }
+            .admin-header h1 { font-size: 1.8rem; }
+            .spots-list { grid-template-columns: 1fr; } /* Schaltet Spot-Cards auf einspaltig */
+            .admin-header .btn { width: 100% !important; text-align: center; box-sizing: border-box; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <div class="admin-header">
+            <a href="/map" class="btn" style="width: auto; margin: 0; padding: 10px 20px; text-decoration: none; background: var(--accent-gold); color: var(--bg-dark); font-weight: bold; border-radius: 5px; font-size: 0.85rem; text-transform: uppercase;">⬅️ Zurück zur Karte</a>
+            <h1 style="color: var(--accent-gold); margin: 0; font-size: 2.2rem; text-transform: uppercase;">🛠️ Admin-Zentrale</h1>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="openTab(event, 't-vorschlaege')">📥 Vorschläge</button>
+            <button class="tab-btn" onclick="openTab(event, 't-nutzer')">👥 Nutzer</button>
+            <button class="tab-btn" onclick="openTab(event, 't-spots')">🏗️ Spot-Manager</button>
+        </div>
+
+        <div id="t-vorschlaege" class="tab-content active">
+            <h3>Eingegangene Spot-Meldungen</h3>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>ID</th><th>Name</th><th>Stadt</th><th>Status</th><th>Aktion</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for v in vorschlaege %}
+                        <tr>
+                            <td>{{ v.id }}</td>
+                            <td>{{ v.standort }}</td>
+                            <td>{{ v.stadt }}</td>
+                            <td><span class="status-badge status-offen">Prüfen</span></td>
+                            <td>
+                                <form action="/admin/approve/{{ v.id }}" method="post" style="margin:0;">
+                                    <button type="submit" style="background:none; border:none; color:#28a745; cursor:pointer; font-weight:bold; padding:0;">✅ FREIGEBEN</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="t-nutzer" class="tab-content">
+            <h3>Community Übersicht</h3>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>ID</th><th>Username</th><th>Email</th><th>Rolle</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for n in nutzer %}
+                        <tr>
+                            <td>{{ n.id }}</td>
+                            <td>{{ n.benutzername }}</td>
+                            <td>{{ n.email }}</td>
+                            <td>{{ n.rolle }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="t-spots" class="tab-content">
+            <h3>Bestehende Spielplätze verwalten</h3>
+            
+            <div class="filter-bar">
+                <input type="text" id="spotSearch" class="search-input" placeholder="Nach Name, Ort oder PLZ filtern...">
+            </div>
+
+            <div class="accordion-container">
+                
+                {% for group in plaetze|groupby('stadt') %}
+                <div class="region-section">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <span>📂 {{ group.grouper or 'Unbekannte Region' }}</span>
+                        <span class="region-counter">{{ group.list|length }} Spots</span>
+                    </div>
+                    <div class="spots-list">
+                        {% for p in group.list %}
+                        <div class="spot-item-card" data-search="{{ p.Standort|lower }} {{ p.stadt|lower }} {{ p.id }}">
+                            <div class="spot-info">
+                                <h4>{{ p.Standort }}</h4>
+                                <p>📍 {{ p.stadt }}</p>
+                                <p style="font-size: 0.7rem; opacity: 0.5; margin-top: 5px;">ID: #{{ p.id }} | Status: {{ p.status }}</p>
+                            </div>
+                            <div class="spot-actions">
+                                <a href="/admin/edit/{{ p.id }}" class="btn-sm btn-edit">Bearbeiten</a>
+                                <a href="/admin/delete/{{ p.id }}" class="btn-sm btn-delete">Löschen</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <p style="opacity: 0.5; text-align: center; margin-top: 20px;">Keine Spielplätze in der Datenbank.</p>
+                {% endfor %}
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTab(evt, tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        function toggleRegion(header) {
+            header.parentElement.classList.toggle('open');
+        }
+
+        document.getElementById('spotSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.spot-item-card');
+            const sections = document.querySelectorAll('.region-section');
+
+            cards.forEach(card => {
+                const searchContent = card.getAttribute('data-search');
+                if (searchContent.includes(searchTerm)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            sections.forEach(section => {
+                const visibleCards = section.querySelectorAll('.spot-item-card:not([style*="display: none"])');
+                
+                if (searchTerm.length > 0) {
+                    if (visibleCards.length > 0) {
+                        section.classList.add('open');
+                        section.style.display = 'block';
+                    } else {
+                        section.classList.remove('open');
+                        section.style.display = 'none';
+                    }
+                } else {
+                    section.classList.remove('open');
+                    section.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

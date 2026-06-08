@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WuselMap Explorer - MAXI</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+   <link rel="stylesheet" href="/static/map_style.css?v=2.0">
+    
+    <style>
+        .notification-badge {
+            position: absolute; top: 5px; right: 15px; background: #ff4444; color: white;
+            border-radius: 50%; padding: 2px 7px; font-size: 0.75rem; font-weight: 900;
+            border: 2px solid var(--bg-dark); z-index: 10;
+        }
+        #star-rating span { font-size: 1.8rem; cursor: pointer; color: #777; transition: color 0.2s; }
+        #star-rating span.active { color: var(--accent-gold); }
+        /* Kleiner visueller Schutz für den Admin-Button */
+        .nav-admin { border-top: 2px solid var(--accent-gold); }
+
+        /* NEU: Warnhinweis-Styling passend zur WuselMap-Farbpalette */
+        .safety-alert {
+            background: rgba(217, 83, 79, 0.1); 
+            border-left: 4px solid #d9534f; 
+            padding: 12px; 
+            border-radius: 6px; 
+            margin: 15px 0; 
+            font-size: 0.75rem; 
+            line-height: 1.4; 
+            color: #f2dede;
+        }
+    </style>
+</head>
+<body>
+
+    <header id="top-logo-bar">
+        <div class="logo-positioner">
+            <img src="/static/Logo_Wuselmap.png" alt="WuselMap GIGA Logo" class="main-logo">
+        </div>
+    </header>
+
+    <div class="main-wrapper">
+
+        <nav id="main-nav">
+            <a href="/map" class="nav-item active">
+                <span class="nav-icon">🗺️</span>
+                <span class="nav-label">Karte</span>
+            </a>
+            
+            <a href="/einsenden" class="nav-item">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">Spot melden</span>
+            </a>
+
+            <a href="/funk" class="nav-item">
+                <span class="nav-icon">📻</span>
+                <span class="nav-label">Funk</span>
+            </a>
+
+            <a href="/crew" class="nav-item" style="position: relative;">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Crew</span>
+                {% if anzahl_neu and anzahl_neu > 0 %}
+                <span class="notification-badge">{{ anzahl_neu }}</span>
+                {% endif %}
+            </a>
+
+            <a href="/profil" class="nav-item">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profil</span>
+            </a>
+
+            {% if request.session.get('role') == 'admin' %}
+            <a href="/admin" class="nav-item nav-admin">
+                <span class="nav-icon">🔑</span>
+                <span class="nav-label">Admin</span>
+            </a>
+            {% endif %}
+
+            <!-- NEU: Rechtliches direkt über dem Logout -->
+            <a href="/rechtliches" class="nav-item">
+                <span class="nav-icon">📄</span>
+                <span class="nav-label">Rechtliches</span>
+            </a>
+
+            <a href="/logout" class="nav-item">
+                <span class="nav-icon">🚪</span>
+                <span class="nav-label">Logout</span>
+            </a>
+        </nav>
+
+        <div id="sidebar">
+            <div class="search-container">
+                <input type="text" id="suche" class="search-box" placeholder="🔍 Ort, PLZ oder Name...">
+                
+                <div class="filter-group" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-size: 0.8rem; color: var(--accent-gold);">Umkreis: <span id="dist-val">20</span> km</label>
+                        <input type="range" id="filter-dist" min="1" max="50" value="20" style="width: 60%; accent-color: var(--accent-gold);">
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-size: 0.8rem; color: var(--accent-gold);">Alter:</label>
+                        <select id="filter-alter" class="search-box">
+                            <option value="alle">Alle Altersklassen</option>
+                            <option value="0-3">0-3 Jahre</option>
+                            <option value="3-12">3-12 Jahre</option>
+                            <option value="6-14">Über 6 Jahre</option>
+                        </select>
+                    </div>
+
+                    <button id="btn-suche-start" class="btn" style="width: 100%; padding: 12px; margin: 10px 0 0 0;">🔍 Jetzt Suchen</button>
+                </div>
+            </div>
+
+            <div class="safety-alert">
+                <strong>⚠️ Sicherheitshinweis:</strong> Kinder müssen auf den Spielplätzen immer von Erwachsenen beaufsichtigt werden. Nutzung auf eigene Gefahr.
+            </div>
+
+            <div id="placeholder" class="placeholder-text" style="padding: 40px; text-align: center;">
+                <h3 style="color: var(--accent-gold);">WuselMap Maxi-View</h3>
+                <p>Wähle einen Punkt auf der Karte, um Details zu sehen.</p>
+            </div>
+
+            <div id="details" class="detail-content" style="display: none;">
+                <img id="det-bild" src="" class="playground-image" style="display: none;" alt="Spielplatzbild">
+                <div class="info-content">
+                    <h2 id="det-name"></h2>
+                    <p id="det-stadt"></p>
+                    <p id="det-alter" style="font-weight: bold; color: var(--accent-gold);"></p>
+                    <div class="status-bar" style="display: flex; align-items: center; gap: 10px; margin: 15px 0;">
+                        <div id="wetter-icon" style="font-size: 1.5rem;">🌡️</div>
+                        <div id="wetter-temp" style="font-size: 1.2rem; font-weight: bold;">--°C</div>
+                    </div>
+                    <div id="det-ausstattung" class="feature-list" style="margin: 15px 0;"></div>
+                </div>
+
+                <div class="btn-group" style="display: flex; flex-direction: column; gap: 10px;">
+                    <a id="det-navi" class="btn" target="_blank">🚗 Route berechnen</a>
+                    <button id="fav-btn" class="btn" onclick="favoritSpeichern()">⭐ Favorit保存</button>
+                    <button class="btn" onclick="offneBewertungsMenu()">⭐ Bewerten</button>
+                </div>
+                
+                <div id="bewertungs-area" style="display: none; padding: 20px; background: rgba(0,0,0,0.3); margin-top: 15px; border-radius: 10px; border: 1px solid var(--accent-gold);">
+                    <h4 style="color: var(--accent-gold); margin: 0 0 10px 0;">SPIELPLATZ BEWERTEN</h4>
+                    <div id="star-rating">
+                        <span onclick="setStars(1)" id="star1">☆</span><span onclick="setStars(2)" id="star2">☆</span><span onclick="setStars(3)" id="star3">☆</span><span onclick="setStars(4)" id="star4">☆</span><span onclick="setStars(5)" id="star5">☆</span>
+                    </div>
+                    <textarea id="bewertung-kommentar" class="search-box" style="width: 100%; height: 60px; margin: 10px 0;" placeholder="Dein Kommentar..."></textarea>
+                    <button class="btn" onclick="sendeBewertung()" style="width: 100%;">Abschicken</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const allePlaetze = JSON.parse('{{ plaetze | tojson | safe }}');
+        window.currentSelectedId = null; 
+        let selectedStars = 0;
+
+        function favoritSpeichern() {
+            const s_id = window.currentSelectedId;
+            if (!s_id) { alert("Bitte wähle erst einen Spielplatz aus!"); return; }
+
+            let fd = new FormData();
+            fd.append('spielplatz_id', s_id);
+
+            fetch('/add_favorit', { method: 'POST', body: fd })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const btn = document.getElementById('fav-btn');
+                    btn.innerHTML = "✅ Gespeichert";
+                    btn.style.backgroundColor = "#28a745";
+                }
+            });
+        }
+
+        function offneBewertungsMenu() {
+            const area = document.getElementById('bewertungs-area');
+            area.style.display = area.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function setStars(n) {
+            selectedStars = n;
+            for(let i=1; i<=5; i++) {
+                const star = document.getElementById('star'+i);
+                star.innerText = i <= n ? '⭐' : '☆';
+                i <= n ? star.classList.add('active') : star.classList.remove('active');
+            }
+        }
+
+        function sendeBewertung() {
+            if (!window.currentSelectedId || selectedStars === 0) {
+                alert("Bitte Spielplatz wählen und Sterne vergeben!"); return;
+            }
+            let fd = new FormData();
+            fd.append('spielplatz_id', window.currentSelectedId);
+            fd.append('sterne', selectedStars);
+            fd.append('kommentar', document.getElementById('bewertung-kommentar').value);
+
+            fetch('/bewerten', { method: 'POST', body: fd })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ Danke!');
+                    offneBewertungsMenu();
+                }
+            });
+        }
+    </script>
+    <script src="/static/map_logic.js"></script>
+</body>
+</html>

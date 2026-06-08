@@ -1,18 +1,25 @@
-.env
+# Python & Umgebungen
 venv/
+.env
 __pycache__/
+*.pyc
+
+# Neue SQLite-Datenbank (WICHTIG: Darf nicht zu GitHub!)
+wuselmap.db
+wuselmap.db-journal
+
+# Medien & Uploads
 uploads/
-.streamlit/git 
-# Python Umgebung
-venv/
-.env
 
 # PyInstaller (EXE-Bau)
 dist/
 build/
+*.spec
 *.exe
 
-# Cache und Temporäres
-__pycache__/
+# Cache, Logs und Temporäres
 *.log
 fehlerlog.txt
+.pytest_cache/
+.vscode/
+.idea/

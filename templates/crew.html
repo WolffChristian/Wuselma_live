@@ -1,0 +1,257 @@
+<<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WuselMap - Crew & Wuselfunk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/static/map_style.css?v=2.0">
+    
+    <style>
+        /* Verhindert Scrollbalken auf dem Hauptdokument im Desktop-Modus */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+        }
+
+        /* FIX: Zwingt die Crew-Zentrale ganz nach oben direkt unter das Logo */
+        .crew-area {
+            position: absolute;
+            top: calc(var(--header-height) + 10px); /* Klebt direkt 10px unter das Logo */
+            left: calc(var(--nav-width) + 30px);   /* Hält exakt Abstand zur linken Navigation */
+            right: 30px;
+            bottom: 20px;                           /* Lässt unten 20px Platz zum Bildschirmrand */
+            display: grid;
+            grid-template-columns: 380px 1fr;       /* Linke Spalte etwas schmaler und kompakter gezogen */
+            gap: 30px;
+            box-sizing: border-box;
+        }
+
+        .crew-column {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            border-top: 5px solid var(--accent-gold);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden; /* Wichtig für die internen Scrollbalken */
+            height: 100%;     /* Nutzt die exakte Höhe der area */
+            box-sizing: border-box;
+        }
+
+        .search-box-crew {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(229, 185, 77, 0.3);
+            flex-shrink: 0;
+        }
+
+        .input-field, .area-field {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--card-bg);
+            background: var(--main-turquois);
+            color: var(--text-light);
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        .crew-list-container {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .crew-item {
+            background: var(--main-turquois);
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--accent-gold);
+        }
+
+        /* WUSELFUNK STYLES */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .msg-bubble {
+            background: rgba(244, 228, 188, 0.1);
+            padding: 12px 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            border-left: 3px solid #f4e4bc;
+            max-width: 80%;
+        }
+
+        .msg-bubble.mine {
+            align-self: flex-end;
+            border-left: none;
+            border-right: 3px solid var(--accent-gold);
+            background: rgba(229, 185, 77, 0.1);
+        }
+
+        .crew-btn {
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        h2 { color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1px; margin-top: 0; font-size: 1.2rem; margin-bottom: 20px; }
+        h3 { color: var(--accent-gold); font-size: 0.9rem; text-transform: uppercase; margin: 15px 0 10px 0; }
+
+        /* MOBIL-ANPASSUNGEN (Für Handys und Tablets untereinander brechen) */
+        @media (max-width: 1100px) {
+            body {
+                overflow: auto !important; /* Erlaubt Scrollen auf dem Handy */
+                height: auto;
+            }
+            .crew-area { 
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                right: auto !important;
+                bottom: auto !important;
+                margin-left: var(--nav-width); 
+                grid-template-columns: 1fr !important; 
+                height: auto !important; 
+                padding: 20px; 
+            }
+            .crew-column { 
+                height: auto !important; 
+                overflow: visible !important;
+            }
+            .crew-list-container {
+                max-height: 400px; /* Begrenzt die Listenboxen mobil, damit man den Chat noch erreicht */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="top-logo-bar">
+        <div class="logo-positioner">
+            <img src="/static/Logo_Wuselmap.png" alt="WuselMap" class="main-logo">
+        </div>
+    </header>
+
+    <nav id="main-nav">
+        <a href="/map" class="nav-item"><span class="nav-icon">🗺️</span><span class="nav-label">Karte</span></a>
+        <a href="/funk" class="nav-item"><span class="nav-icon">📻</span><span class="nav-label">Funk</span></a>
+        <a href="/crew" class="nav-item active"><span class="nav-icon">👥</span><span class="nav-label">Crew</span></a>
+        <a href="/profil" class="nav-item"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></a>
+        <a href="/rechtliches" class="nav-item"><span class="nav-icon">📄</span><span class="nav-label">Rechtliches</span></a>
+        <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span><span class="nav-label">Logout</span></a>
+    </nav>
+
+    <div class="crew-area">
+        <div class="crew-column">
+            <h2>👥 Crew-Zentrale</h2>
+            
+            <div class="search-box-crew">
+                <form action="/suche_crew" method="post" style="display: flex; gap: 10px;">
+                    <input type="text" name="suche" class="input-field" style="margin:0;" placeholder="Wusel suchen..." required>
+                    <button type="submit" class="crew-btn" style="padding: 10px;">🔍</button>
+                </form>
+            </div>
+
+            <div class="crew-list-container">
+                {% if treffer %}
+                <h3>Gefundene Wusel</h3>
+                {% for t in treffer %}
+                <div class="crew-item">
+                    <span><strong>{{ t.vorname }}</strong> (@{{ t.benutzername }})</span>
+                    <form action="/einladen/{{ t.benutzername }}" method="post">
+                        <button type="submit" class="crew-btn" style="padding: 5px 10px; font-size: 0.7rem;">Einladen</button>
+                    </form>
+                </div>
+                {% endfor %}
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+                {% endif %}
+
+                {% if anfragen %}
+                <h3>Offene Anfragen</h3>
+                {% for a in anfragen %}
+                <div class="crew-item" style="border-left-color: #ff4444;">
+                    <span>{{ a.von_nutzer }}</span>
+                    <a href="/crew_akzeptieren/{{ a.id }}" class="crew-btn" style="padding: 5px 10px; font-size: 0.7rem; text-decoration: none;">✔</a>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <h3>Deine Crew</h3>
+                {% for f in freunde %}
+                <div class="crew-item">
+                    <span>🧗 <strong>{{ f }}</strong></span>
+                    <button onclick="setChatTarget('{{ f }}')" class="crew-btn" style="padding: 5px 10px; font-size: 0.7rem; background: var(--main-turquois); color: var(--accent-gold); border: 1px solid var(--accent-gold);">Wuselfunk</button>
+                </div>
+                {% else %}
+                <p style="opacity: 0.5; font-size: 0.8rem; text-align: center;">Noch keine Crew-Mitglieder.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="crew-column">
+            <div class="chat-container">
+                <h2 id="chat-title">🔒 Wuselfunk</h2>
+                
+                <div id="chat-feed" class="crew-list-container" style="padding: 10px;">
+                    {% for msg in privat_msg %}
+                    <div class="msg-bubble {% if msg.von_nutzer == user %}mine{% endif %}">
+                        <div style="font-size: 0.7rem; color: var(--accent-gold); font-weight: bold; margin-bottom: 5px;">
+                            {{ msg.von_nutzer }} {% if msg.ziel != 'GLOBAL' and msg.von_nutzer == user %} an {{ msg.ziel }}{% endif %}
+                        </div>
+                        <div style="color: white;">{{ msg.nachricht }}</div>
+                        <div style="font-size: 0.6rem; opacity: 0.5; margin-top: 5px; text-align: right;">{{ msg.zeitpunkt }}</div>
+                    </div>
+                    {% else %}
+                    <p style="text-align: center; opacity: 0.3; margin-top: 50px;">Wähle einen Wusel aus deiner Crew, um privat zu funken.</p>
+                    {% endfor %}
+                </div>
+
+                <div class="search-box-crew" style="margin-top: 20px; margin-bottom: 0;">
+                    <form action="/sende_funk" method="post">
+                        <input type="hidden" name="is_private" value="True">
+                        <input type="hidden" name="spot" value="Allgemein">
+                        <input type="text" id="chat-ziel-input" name="ziel" class="input-field" placeholder="Empfänger..." required readonly>
+                        <textarea name="nachricht" class="area-field" placeholder="Deine Nachricht..." required style="height: 80px;"></textarea>
+                        <button type="submit" class="crew-btn" style="width: 100%;">Nachricht senden</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setChatTarget(name) {
+            document.getElementById('chat-ziel-input').value = name;
+            document.getElementById('chat-title').innerText = "🔒 Wuselfunk mit " + name;
+        }
+
+        window.onload = function() {
+            var objDiv = document.getElementById("chat-feed");
+            if(objDiv) {
+                objDiv.scrollTop = objDiv.scrollHeight;
+            }
+        };
+    </script>
+</body>
+</html>

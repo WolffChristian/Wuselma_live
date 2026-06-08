@@ -1,135 +1,272 @@
-import streamlit as st
-from database_manager import hole_df, hash_passwort, registriere_nutzer
-from styles import apply_custom_css, show_header
-from user_area import show_profile_area, show_feedback_area
-from admin_area import show_admin_area
-from legal_area import show_legal_area
-from messaging import show_spielplatzfunk 
-from user_map import show_map_section 
+import os
+import io
+from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
+from admin_area import router as admin_router
+import database_manager as db
 
-def main():
-    apply_custom_css()
-    show_header()
+# 1. Router importieren
+try:
+    from routes_community import router as community_router
+except ImportError:
+    print("Fehler: Die Datei routes_community.py wurde nicht gefunden!")
+
+# 2. FastAPI App definieren
+app = FastAPI()
+
+# 3. Sicherheits-Key für Sessions
+app.add_middleware(SessionMiddleware, secret_key="dein_geheimnis_carlos_123")
+
+# 4. Router einbinden
+app.include_router(community_router)
+app.include_router(admin_router)
+
+# 5. Pfade und Verzeichnisse setzen
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# --- HILFSFUNKTION FÜR NAVIGATION (ROTER PUNKT) ---
+def get_nav_context(request: Request, user: str):
+    anzahl = db.zaehle_ungelesene(user) if user else 0
+    return {"request": request, "anzahl_neu": anzahl, "user": user}
+
+# --- LOGIN & AUTH ---
+@app.get("/", response_class=HTMLResponse)
+async def login_page(request: Request):
+    if request.session.get("logged_in"): 
+        return RedirectResponse(url="/map")
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login")
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    u = username.lower().strip()
+    nutzer_liste = db.hole_df("nutzer")
     
-    st.warning("⚠️ **WuselMap Beta:** Wir optimieren gerade die Funktionen. 🧗‍♂️")
-
-    # Session State initialisieren
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
-    if 'auth_mode' not in st.session_state:
-        st.session_state.auth_mode = "login"
-
-    # Login-Check über URL-Parameter
-    if not st.session_state.logged_in and "user" in st.query_params:
-        u_name = st.query_params["user"]
-        df = hole_df("nutzer")
-        if not df.empty and u_name in df['benutzername'].values:
-            st.session_state.logged_in = True
-            st.session_state.user = u_name
-            st.session_state.role = df[df['benutzername'] == u_name]['rolle'].values[0]
-
-    if not st.session_state.logged_in:
-        if st.session_state.auth_mode == "login":
-            show_login_page()
-        else:
-            show_registration_page()
-    else:
-        show_main_app()
-
-def show_login_page():
-    st.markdown("### 🔑 Login")
-    with st.form("login_form"):
-        u = st.text_input("Benutzername").lower().strip()
-        p = st.text_input("Passwort", type="password")
-        if st.form_submit_button("Anmelden", use_container_width=True):
-            df = hole_df("nutzer")
-            if not df.empty and u in df['benutzername'].values:
-                pw_hash = df[df['benutzername'] == u]['passwort'].values[0]
-                if pw_hash == hash_passwort(p):
-                    st.session_state.logged_in = True
-                    st.session_state.user = u
-                    st.session_state.role = df[df['benutzername'] == u]['rolle'].values[0]
-                    st.query_params["user"] = u
-                    st.rerun()
-                else: st.error("Passwort falsch.")
-            else: st.error("Nutzer nicht gefunden.")
+    # Nutzer in der Liste via reinem Python suchen
+    user_row = next((n for n in nutzer_liste if n['benutzername'] == u), None)
     
-    if st.button("Noch kein Konto? Hier registrieren", use_container_width=True):
-        st.session_state.auth_mode = "register"
-        st.rerun()
+    if user_row:
+        # Passwort checken (nutzt jetzt die Hashing-Funktion aus db_users via app.py Logik)
+        from db_users import hash_passwort
+        if user_row['passwort'] == hash_passwort(password):
+            request.session["logged_in"] = True
+            request.session["user"] = u
+            request.session["role"] = str(user_row.get('rolle', 'user')).lower().strip()
+            
+            print(f"Login erfolgreich: {u} mit Rolle: {request.session['role']}")
+            return RedirectResponse(url="/map", status_code=303)
+            
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Fehler beim Login"})
 
-def show_registration_page():
-    st.markdown("### 📝 Registrierung")
-    with st.form("reg_form"):
-        new_u = st.text_input("Wunsch-Benutzername*")
-        new_p = st.text_input("Passwort*", type="password")
-        new_e = st.text_input("E-Mail*")
-        c1, c2 = st.columns(2)
-        new_vn = c1.text_input("Vorname")
-        new_nn = c2.text_input("Nachname")
-        new_al = st.number_input("Alter", min_value=0, max_value=120, value=25)
-        agb = st.checkbox("Ich akzeptiere die Nutzungsbedingungen*")
+# --- REGISTRIERUNG ---
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+@app.post("/register")
+async def register(request: Request, username: str=Form(...), password: str=Form(...), email: str=Form(...), vorname: str=Form(...), nachname: str=Form(...), alter: int=Form(...)):
+    nutzer_liste = db.hole_df("nutzer")
+    
+    # Prüfen ob Name vergeben ist
+    if any(n['benutzername'].lower() == username.lower() for n in nutzer_liste):
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Name vergeben!"})
+    
+    from db_users import registriere_nutzer
+    if registriere_nutzer(username, password, email, vorname, nachname, alter, agb=1):
+        return RedirectResponse(url="/", status_code=303)
+    return templates.TemplateResponse("register.html", {"request": request, "error": "Fehler"})
+
+# --- KARTE ---
+@app.get("/map", response_class=HTMLResponse)
+async def show_map(request: Request):
+    user = request.session.get("user")
+    if not request.session.get("logged_in"): 
+        return RedirectResponse(url="/")
+    
+    plaetze = db.hole_df("spielplaetze")
+    ctx = get_nav_context(request, user)
+    ctx.update({"plaetze": plaetze})
+    return templates.TemplateResponse("karte.html", ctx)
+
+# --- FUNK (ÖFFENTLICH) ---
+@app.get("/funk", response_class=HTMLResponse)
+async def show_funk(request: Request):
+    user = request.session.get("user")
+    if not request.session.get("logged_in"): 
+        return RedirectResponse(url="/")
+    
+    nutzer_liste = db.hole_df("nutzer")
+    user_data = next((n for n in nutzer_liste if n['benutzername'] == user), {})
+    
+    public_msg = db.hole_nachrichten(user, nur_privat=False)
+    plaetze = db.hole_df("spielplaetze")
+    spot_namen = [p['Standort'] for p in plaetze]
+
+    ctx = get_nav_context(request, user)
+    ctx.update({
+        "user_data": user_data,
+        "public_msg": public_msg,
+        "spot_namen": spot_namen
+    })
+    return templates.TemplateResponse("funk.html", ctx)
+
+@app.post("/sende_funk")
+async def sende_funk(request: Request, nachricht: str=Form(...), spot: str=Form("Allgemein"), is_private: bool=Form(False), ziel: str=Form("GLOBAL")):
+    user = request.session.get("user")
+    if not user: 
+        return RedirectResponse(url="/", status_code=303)
+    
+    db.sende_nachricht(von=user, ziel=ziel, nachricht=nachricht, is_private=is_private, spot_name=spot)
+    return RedirectResponse(url="/crew" if is_private else "/funk", status_code=303)
+
+# --- CREW & WUSELFUNK ---
+@app.get("/crew", response_class=HTMLResponse)
+async def show_crew(request: Request):
+    user = request.session.get("user")
+    if not request.session.get("logged_in"): 
+        return RedirectResponse(url="/")
+    
+    db.markiere_als_gelesen(user)
+    freunde = db.hole_freundesliste(user)
+    privat_msg = db.hole_nachrichten(user, nur_privat=True)
+    
+    ctx = get_nav_context(request, user)
+    ctx.update({
+        "freunde": freunde,
+        "privat_msg": privat_msg,
+        "anfragen": [] 
+    })
+    return templates.TemplateResponse("crew.html", ctx)
+
+@app.post("/suche_crew")
+async def suche_crew(request: Request, suche: str=Form(...)):
+    user = request.session.get("user")
+    if not user: 
+        return RedirectResponse(url="/", status_code=303)
+    
+    nutzer_liste = db.hole_df("nutzer")
+    s = suche.lower()
+    treffer = [
+        n for n in nutzer_liste 
+        if s in n['benutzername'].lower() or (n['vorname'] and s in n['vorname'].lower())
+    ]
+    
+    ctx = get_nav_context(request, user)
+    ctx.update({
+        "treffer": treffer, 
+        "freunde": db.hole_freundesliste(user),
+        "privat_msg": [],
+        "anfragen": []
+    })
+    return templates.TemplateResponse("crew.html", ctx)
+
+@app.post("/einladen/{freund_name}")
+async def einladen(request: Request, freund_name: str):
+    user = request.session.get("user")
+    if user:
+        db.fuege_freund_hinzu(user, freund_name)
+    return RedirectResponse(url="/crew", status_code=303)
+
+# --- PROFIL ---
+@app.get("/profil", response_class=HTMLResponse)
+async def show_profile(request: Request):
+    user = request.session.get("user")
+    if not user: 
+        return RedirectResponse(url="/", status_code=303)
+    
+    nutzer_liste = db.hole_df("nutzer")
+    user_data = next((n for n in nutzer_liste if n['benutzername'] == user), {})
+    favoriten = db.hole_favoriten_details(user)
+
+    ctx = get_nav_context(request, user)
+    ctx.update({"user_data": user_data, "favoriten": favoriten})
+    return templates.TemplateResponse("profil.html", ctx)
+
+@app.post("/update_profil")
+async def update_profil(request: Request, email: str=Form(...), vorname: str=Form(...), nachname: str=Form(...), alter: int=Form(...), emoji: str=Form(...)):
+    user = request.session.get("user")
+    if user: 
+        db.aktualisiere_profil(user, email, vorname, nachname, alter, emoji)
+    return RedirectResponse(url="/profil", status_code=303)
+
+# --- AVATAR-UPLOAD ---
+@app.post("/update_avatar")
+async def update_avatar(request: Request, avatar_file: UploadFile = File(...)):
+    user = request.session.get("user")
+    if not user: 
+        return RedirectResponse(url="/", status_code=303)
+    
+    contents = await avatar_file.read()
+    if contents:
+        print(f"Datei erhalten: {avatar_file.filename} für User {user}")
         
-        if st.form_submit_button("Konto erstellen", use_container_width=True):
-            if new_u and new_p and new_e and agb:
-                if registriere_nutzer(new_u, new_p, new_e, new_vn, new_nn, new_al, 1):
-                    st.success("Erfolg! Du kannst dich jetzt einloggen.")
-                    st.session_state.auth_mode = "login"
-                    st.rerun()
-                else: st.error("Benutzername oder E-Mail bereits vergeben.")
-            else: st.warning("Bitte alle Pflichtfelder (*) ausfüllen.")
+    return RedirectResponse(url="/profil", status_code=303)
 
-    if st.button("Zurück zum Login", use_container_width=True):
-        st.session_state.auth_mode = "login"
-        st.rerun()
+# --- FEEDBACK ---
+@app.post("/send_feedback")
+async def send_feedback(request: Request, feedback_text: str = Form(...)):
+    user = request.session.get("user") or "Anonym"
+    # Parameter an deine SQLite-Struktur angepasst (von, ziel, nachricht)
+    db.sende_nachricht(von=user, ziel="ADMIN", nachricht=f"[FEEDBACK] {feedback_text}", is_private=True, spot_name="System")
+    return RedirectResponse(url="/profil", status_code=303)
 
-def show_main_app():
-    # 1. Nutzerdaten für die Personalisierung abrufen
-    df_n = hole_df("nutzer")
-    user_row = df_n[df_n['benutzername'] == st.session_state.user]
+# --- FAVORITEN ---
+@app.post("/add_favorit")
+async def add_favorit(request: Request, spielplatz_id: str = Form(...)):
+    user = request.session.get("user")
+    if not user: 
+        return {"status": "error", "message": "Nicht eingeloggt"}
     
-    # Standardwerte
-    mein_emoji = "👤" 
-    bereichs_titel = "Mein Bereich"
-    
-    if not user_row.empty:
-        u_data = user_row.iloc[0]
-        # Emoji aus der DB laden
-        mein_emoji = u_data.get('profil_emoji') or "👤"
-        
-        # Vornamen-Logik (z.B. Sabrinas Bereich)
-        vn = u_data.get('vorname')
-        if vn and str(vn).strip():
-            # Grammatik: s, x, z Endungen erhalten nur ein Apostroph
-            if vn.lower().endswith(('s', 'x', 'z')):
-                bereichs_titel = f"{vn}' Bereich"
-            else:
-                bereichs_titel = f"{vn}s Bereich"
+    try:
+        s_id = int(spielplatz_id)
+        erfolg = db.speichere_favorit(user, s_id)
+        return {"status": "success" if erfolg else "error"}
+    except Exception as e:
+        print(f"Fehler beim Favorit-Zuweisen: {e}")
+        return {"status": "error", "message": str(e)}
 
-    # 2. Das Menü mit dynamischen Namen und Emoji zusammenbauen
-    menu = ["📍 Suche", f"{mein_emoji} {bereichs_titel}", "📢 Funk", "💬 Feedback", "📄 Rechtliches"]
+# --- BEWERTUNGEN ---
+@app.post("/bewerten")
+async def bewerten(request: Request, spielplatz_id: str = Form(...), sterne: str = Form(...), kommentar: str = Form("")):
+    user = request.session.get("user")
+    if not user: 
+        return {"status": "error", "message": "Nicht eingeloggt"}
     
-    if st.session_state.get('role') == 'admin':
-        menu.append("🛠️ Admin")
-    
-    # Tabs erstellen
-    choice = st.tabs(menu)
-    
-    # 3. Den Tabs die entsprechenden Funktionen zuordnen
-    with choice[0]: show_map_section()
-    with choice[1]: show_profile_area()  # Hier erscheint dein Foto und voller Name
-    with choice[2]: show_spielplatzfunk()
-    with choice[3]: show_feedback_area()
-    with choice[4]: show_legal_area()
-    
-    if st.session_state.get('role') == 'admin' and len(choice) > 5:
-        with choice[5]: show_admin_area()
+    try:
+        s_id = int(spielplatz_id)
+        sterne_int = int(sterne)
+        erfolg = db.speichere_bewertung(s_id, user, sterne_int, kommentar)
+        return {"status": "success" if erfolg else "error"}
+    except Exception as e:
+        print(f"Fehler beim Bewerten: {e}")
+        return {"status": "error", "message": str(e)}
 
-    st.divider()
-    if st.button("🚪 Logout", use_container_width=True):
-        st.query_params.clear()
-        st.session_state.logged_in = False
-        st.rerun()
+# --- RECHTLICHES, IMPRESSUM & DATENSCHUTZ ---
+@app.get("/rechtliches", response_class=HTMLResponse)
+async def show_legal(request: Request):
+    user = request.session.get("user")
+    ctx = get_nav_context(request, user)
+    return templates.TemplateResponse("rechtliches.html", ctx)
 
+# --- SONSTIGES ---
+@app.post("/accept_agb")
+async def accept_agb(request: Request):
+    user = request.session.get("user")
+    if not user: 
+        return RedirectResponse(url="/", status_code=303)
+    db.aktualisiere_eintrag("nutzer", user, {"agb_version": 2}) 
+    return RedirectResponse(url="/map", status_code=303)
+
+@app.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/")
+
+# --- SERVER START ---
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
