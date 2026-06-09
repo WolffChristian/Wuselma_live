@@ -3,16 +3,28 @@ from PIL import Image
 import io
 import base64
 import warnings
-
+import mysql.connector
 warnings.filterwarnings("ignore", category=UserWarning)
 
-DB_FILE = "wuselmap.db"
 
-# --- SYSTEM-VERBINDUNG (SQLite) ---
+
+# Server-Konfiguration für die KletterDB
+DB_CONFIG = {
+    'host': '91.99.77.111',
+    'port': 3306,
+    'user': 'admin@wuselmap.de',
+    'password': '%3Bd!Qj4!NMK6.%',
+    'database': 'kletterdb'
+}
+
 def get_db_connection():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row  # Gibt Zeilen automatisch als dict-ähnliche Objekte zurück
-    return conn
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        print("Erfolgreich mit der KletterDB verbunden!")
+        return conn
+    except mysql.connector.Error as err:
+        print(f"Fehler bei der Server-Verbindung: {err}")
+        return None
 
 # --- CORE CRUD ---
 def hole_df(tabelle="spielplaetze"):
